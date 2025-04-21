@@ -7,28 +7,22 @@ router.get("/", async (req, res) => {
   res.json(plans);
 });
 
-router.get("/:id", async (req, res) => {
-  const plan = await db("meal_plans").where("id", req.params.id).first();
-
-  const meals = await db("planned_meals")
-    .join("recipes", "planned_meals.recipe_id", "recipes.id")
-    .select("recipes.name", "recipes.image_url", "planned_meals.multiplier")
-    .where("planned_meals.meal_plan_id", req.params.id);
-
-  const extras = await db("extra_items").where("meal_plan_id", req.params.id);
-
-  res.json({ ...plan, meals, extras });
-});
-
 router.post("/", async (req, res) => {
   const { title } = req.body;
   const [id] = await db("meal_plans").insert({ title }).returning("id");
   res.status(201).json({ id });
 });
 
+router.get("/latest-id", async (req, res) => {
+  const latestMealPlan = await db("meal_plans")
+    .where("archived", false)
+    .orderBy("created_at", "desc")
+    .first();
+  res.json({ id: latestMealPlan.id });
+});
+
 router.get("/:id/grocery-list", async (req, res) => {
   const mealPlanId = req.params.id;
-
   // 1. Fetch all planned meals and their ingredients
   const plannedIngredients = await db("planned_meals")
     .join(
@@ -125,6 +119,19 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
   }
 
   res.json(result);
+});
+
+router.get("/:id", async (req, res) => {
+  const plan = await db("meal_plans").where("id", req.params.id).first();
+
+  const meals = await db("planned_meals")
+    .join("recipes", "planned_meals.recipe_id", "recipes.id")
+    .select("recipes.name", "recipes.image_url", "planned_meals.multiplier")
+    .where("planned_meals.meal_plan_id", req.params.id);
+
+  const extras = await db("extra_items").where("meal_plan_id", req.params.id);
+
+  res.json({ ...plan, meals, extras });
 });
 
 module.exports = router;
