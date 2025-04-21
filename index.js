@@ -29,6 +29,12 @@ app.get("/", (req, res) => {
   res.send("Rumaola Server is running!");
 });
 
+app.use("/api/ingredients", require("./routes/ingredientRoutes"));
+app.use("/api/recipes", require("./routes/recipeRoutes"));
+app.use("/api/meal-plans", require("./routes/mealPlansRoutes"));
+app.use("/api/planned-meals", require("./routes/plannedMealRoutes"));
+app.use("/api/extra-items", require("./routes/extraItemRoutes"));
+
 const SERVER_PORT = process.env.SERVER_PORT || 5005;
 const SERVER_URL = process.env.SERVER_URL || "http://localhost";
 
