@@ -106,6 +106,7 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       .where("recipe_ingredients.recipe_id", meal.recipe_id);
 
     result.push({
+      id: meal.recipe_id,
       name: meal.recipe_name,
       image_url: meal.image_url,
       ingredients,
@@ -126,6 +127,7 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
 
   if (extras.length > 0) {
     result.push({
+      id: 9999999999999999,
       name: "Tambahan Manual",
       image_url: null,
       ingredients: extras.map((item) => ({
