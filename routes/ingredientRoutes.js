@@ -37,9 +37,6 @@ router.put("/:id", async (req, res) => {
   const { name, unit, image_url } = req.body;
   const { id } = req.params;
   try {
-    console.log("name", name);
-    console.log("unit", unit);
-    console.log("image_url", image_url);
     await db("ingredients").where({ id }).update({ name, unit, image_url });
     res.json({ success: true, message: "Ingredient updated" });
   } catch (error) {

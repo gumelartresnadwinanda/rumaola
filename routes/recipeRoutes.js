@@ -4,23 +4,83 @@ require("dotenv").config();
 const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
-  const recipes = await db("recipes").orderBy("name", "asc");
-  res.json(recipes);
+  try {
+    const recipes = await db("recipes").select().orderBy("name", "asc");
+    res.json(recipes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch recipes" });
+  }
 });
 
 router.get("/:id", async (req, res) => {
-  const recipe = await db("recipes").where("id", req.params.id).first();
-  const ingredients = await db("recipe_ingredients")
-    .join("ingredients", "recipe_ingredients.ingredient_id", "ingredients.id")
-    .select(
-      "ingredients.name",
-      "recipe_ingredients.quantity",
-      "ingredients.unit",
-      "ingredients.image_url"
-    )
-    .where("recipe_ingredients.recipe_id", req.params.id);
+  try {
+    const recipe = await db("recipes").where({ id: req.params.id }).first();
+    if (!recipe) return res.status(404).json({ error: "Recipe not found" });
 
-  res.json({ ...recipe, ingredients });
+    const ingredients = await db("recipe_ingredients")
+      .join("ingredients", "recipe_ingredients.ingredient_id", "ingredients.id")
+      .select(
+        "ingredients.id",
+        "ingredients.name",
+        "recipe_ingredients.quantity",
+        "ingredients.unit",
+        "ingredients.image_url"
+      )
+      .where("recipe_ingredients.recipe_id", req.params.id);
+
+    res.json({ ...recipe, ingredients });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch recipe" });
+  }
+});
+
+router.post("/", async (req, res) => {
+  const { name, image_url, ingredients = [] } = req.body;
+  try {
+    const [recipe] = await db("recipes")
+      .insert({ name, image_url })
+      .returning("*");
+
+    for (const item of ingredients) {
+      await db("recipe_ingredients").insert({
+        recipe_id: recipe.id,
+        ingredient_id: item.ingredient_id,
+        quantity: item.quantity,
+      });
+    }
+
+    res.status(201).json({ id: recipe.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create recipe" });
+  }
+});
+
+router.put("/:id/ingredients", async (req, res) => {
+  const { ingredients } = req.body;
+
+  if (!Array.isArray(ingredients)) {
+    return res.status(400).json({ error: "Ingredients must be an array" });
+  }
+
+  try {
+    await db("recipe_ingredients").where({ recipe_id: req.params.id }).del();
+
+    for (const item of ingredients) {
+      await db("recipe_ingredients").insert({
+        recipe_id: req.params.id,
+        ingredient_id: item.ingredient_id,
+        quantity: item.quantity,
+      });
+    }
+
+    res.json({ success: true, message: "Ingredients updated" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update ingredients" });
+  }
 });
 
 module.exports = router;
