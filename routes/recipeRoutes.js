@@ -4,7 +4,7 @@ require("dotenv").config();
 const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
-  const recipes = await db("recipes");
+  const recipes = await db("recipes").orderBy("name", "asc");
   res.json(recipes);
 });
 

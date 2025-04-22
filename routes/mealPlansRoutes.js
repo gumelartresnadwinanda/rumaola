@@ -41,10 +41,17 @@ router.get("/:id/grocery-list", async (req, res) => {
     )
     .where("planned_meals.meal_plan_id", mealPlanId);
 
-  // 2. Fetch extra grocery items
+  // 2. Fetch extra grocery items with ingredient details
   const extraItems = await db("extra_items")
-    .select("name", "unit", "quantity")
-    .where("meal_plan_id", mealPlanId);
+    .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
+    .select(
+      "ingredients.id",
+      "ingredients.name",
+      "ingredients.unit",
+      "ingredients.image_url",
+      "extra_items.quantity"
+    )
+    .where("extra_items.meal_plan_id", mealPlanId);
 
   // 3. Combine and group by name+unit
   const grouped = {};
@@ -53,6 +60,7 @@ router.get("/:id/grocery-list", async (req, res) => {
     const key = `${item.name}-${item.unit}`;
     if (!grouped[key]) {
       grouped[key] = {
+        id: item.id,
         name: item.name,
         total_quantity: parseFloat(item.quantity),
         unit: item.unit,
@@ -91,29 +99,41 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
         db.raw("recipe_ingredients.quantity * ? as quantity", [
           meal.multiplier,
         ]),
+        "ingredients.id",
         "ingredients.unit",
         "ingredients.image_url"
       )
       .where("recipe_ingredients.recipe_id", meal.recipe_id);
 
     result.push({
-      recipe_name: meal.recipe_name,
+      name: meal.recipe_name,
       image_url: meal.image_url,
       ingredients,
     });
   }
 
-  // Add extras as a "manual" recipe
-  const extras = await db("extra_items").where("meal_plan_id", mealPlanId);
+  // Get extra items with ingredient details
+  const extras = await db("extra_items")
+    .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
+    .select(
+      "ingredients.id",
+      "ingredients.name",
+      "ingredients.unit",
+      "ingredients.image_url",
+      "extra_items.quantity"
+    )
+    .where("extra_items.meal_plan_id", mealPlanId);
+
   if (extras.length > 0) {
     result.push({
-      recipe_name: "Tambahan Manual",
+      name: "Tambahan Manual",
       image_url: null,
       ingredients: extras.map((item) => ({
+        id: item.id,
         name: item.name,
         quantity: item.quantity,
         unit: item.unit,
-        image_url: null,
+        image_url: item.image_url,
       })),
     });
   }
@@ -129,7 +149,17 @@ router.get("/:id", async (req, res) => {
     .select("recipes.name", "recipes.image_url", "planned_meals.multiplier")
     .where("planned_meals.meal_plan_id", req.params.id);
 
-  const extras = await db("extra_items").where("meal_plan_id", req.params.id);
+  // Get extra items with ingredient details
+  const extras = await db("extra_items")
+    .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
+    .select(
+      "extra_items.id",
+      "extra_items.quantity",
+      "ingredients.name",
+      "ingredients.unit",
+      "ingredients.image_url"
+    )
+    .where("extra_items.meal_plan_id", req.params.id);
 
   res.json({ ...plan, meals, extras });
 });
