@@ -83,4 +83,49 @@ router.put("/:id/ingredients", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  const { name, image_url, ingredients } = req.body;
+
+  if (!name || !Array.isArray(ingredients)) {
+    return res
+      .status(400)
+      .json({ error: "Invalid input. Name and ingredients are required." });
+  }
+
+  try {
+    const updateData = { name };
+    if (image_url) {
+      updateData.image_url = image_url;
+    }
+
+    await db("recipes").where({ id: req.params.id }).update(updateData);
+
+    await db("recipe_ingredients").where({ recipe_id: req.params.id }).del();
+
+    if (ingredients.length > 0) {
+      for (const item of ingredients) {
+        const exists = await db("recipe_ingredients")
+          .where({
+            recipe_id: req.params.id,
+            ingredient_id: item.ingredient_id,
+          })
+          .first();
+
+        if (!exists) {
+          await db("recipe_ingredients").insert({
+            recipe_id: req.params.id,
+            ingredient_id: item.ingredient_id,
+            quantity: item.quantity,
+          });
+        }
+      }
+    }
+
+    res.json({ success: true, message: "Recipe and ingredients updated" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update recipe and ingredients" });
+  }
+});
+
 module.exports = router;
