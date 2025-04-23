@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
-  const plans = await db("meal_plans");
+  const plans = await db("meal_plans").where("archived", false);
   res.json(plans);
 });
 
@@ -11,6 +11,72 @@ router.post("/", async (req, res) => {
   const { title } = req.body;
   const [id] = await db("meal_plans").insert({ title }).returning("id");
   res.status(201).json({ id });
+});
+
+router.post("/complete", async (req, res) => {
+  const { title, meals, extra_items } = req.body;
+  if (!title || !Array.isArray(meals) || !Array.isArray(extra_items)) {
+    return res.status(400).json("Invalid input");
+  }
+
+  try {
+    const [mealPlanId] = await db("meal_plans")
+      .insert({ title })
+      .returning("id");
+
+    for (const recipe of meals) {
+      await db("planned_meals").insert({
+        meal_plan_id: mealPlanId.id,
+        recipe_id: recipe,
+      });
+    }
+
+    for (const ingredient of extra_items) {
+      await db("extra_items").insert({
+        meal_plan_id: mealPlanId.id,
+        ingredient_id: ingredient.ingredient_id,
+        quantity: ingredient.quantity,
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Meal Plan Created",
+      meal_plan_id: mealPlanId.id,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: `Failed to create meal plan. error: ${e}` });
+  }
+});
+
+router.put("/:id/complete", async (req, res) => {
+  const { id } = req.params;
+  const { title, meals, extra_items } = req.body;
+  if (!title || !Array.isArray(meals) || !Array.isArray(extra_items)) {
+    return res.status(400).json("Invalid input");
+  }
+
+  try {
+    await db("meal_plans").where("id", id).update({ title });
+    await db("planned_meals").where("meal_plan_id", id).del();
+    for (const meal of meals) {
+      await db("planned_meals").insert({ meal_plan_id: id, recipe_id: meal });
+    }
+    await db("extra_items").where("meal_plan_id", id).del();
+    for (const ingredient of extra_items) {
+      await db("extra_items").insert({
+        meal_plan_id: id,
+        ingredient_id: ingredient.ingredient_id,
+        quantity: ingredient.quantity,
+      });
+    }
+
+    res.json({ success: true, message: "Meal Plan Updated" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: `Failed to update meal plan. error: ${e}` });
+  }
 });
 
 router.get("/latest-id", async (req, res) => {
