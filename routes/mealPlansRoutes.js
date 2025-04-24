@@ -214,7 +214,12 @@ router.get("/:id", async (req, res) => {
 
   const meals = await db("planned_meals")
     .join("recipes", "planned_meals.recipe_id", "recipes.id")
-    .select("recipes.name", "recipes.image_url", "planned_meals.multiplier")
+    .select(
+      "recipes.id",
+      "recipes.name",
+      "recipes.image_url",
+      "planned_meals.multiplier"
+    )
     .where("planned_meals.meal_plan_id", req.params.id);
 
   // Get extra items with ingredient details
