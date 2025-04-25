@@ -226,7 +226,7 @@ router.get("/:id", async (req, res) => {
   const extras = await db("extra_items")
     .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
     .select(
-      "extra_items.id",
+      "extra_items.ingredient_id as id",
       "extra_items.quantity",
       "ingredients.name",
       "ingredients.unit",
