@@ -3,7 +3,9 @@ const router = express.Router();
 const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
-  const plans = await db("meal_plans").where("archived", false);
+  const plans = await db("meal_plans")
+    .where("archived", false)
+    .orderBy("created_at", "desc");
   res.json(plans);
 });
 
@@ -76,6 +78,19 @@ router.put("/:id/complete", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: `Failed to update meal plan. error: ${e}` });
+  }
+});
+
+router.put("/:id/archive", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await db("meal_plans").where("id", id).update({ archived: true });
+
+    res.json({ success: true, message: "Meal plan archived" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to archive meal plan" });
   }
 });
 
