@@ -3,7 +3,16 @@ const router = express.Router();
 const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
-  const ingredients = await db("ingredients").orderBy("name", "asc");
+  const { is_extra = false } = req.query;
+  const ingredients = await db("ingredients")
+    .select([
+      "id",
+      "name",
+      db.raw(is_extra ? '"unit_purchase" as "unit"' : '"unit"'),
+      "image_url",
+      "comparison_scale",
+    ])
+    .orderBy("name", "asc");
   res.json(ingredients);
 });
 
@@ -21,10 +30,24 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { name, unit, image_url } = req.body;
+  const {
+    name,
+    unit,
+    image_url,
+    purchase_unit,
+    comparison_scale,
+    minimum_purchase,
+  } = req.body;
   try {
     const [id] = await db("ingredients")
-      .insert({ name, unit, image_url })
+      .insert({
+        name,
+        unit,
+        image_url,
+        purchase_unit,
+        comparison_scale,
+        minimum_purchase,
+      })
       .returning("id");
     res.status(201).json({ id });
   } catch (error) {
@@ -34,10 +57,24 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const { name, unit, image_url } = req.body;
+  const {
+    name,
+    unit,
+    image_url,
+    purchase_unit,
+    comparison_scale,
+    minimum_purchase,
+  } = req.body;
   const { id } = req.params;
   try {
-    await db("ingredients").where({ id }).update({ name, unit, image_url });
+    await db("ingredients").where({ id }).update({
+      name,
+      unit,
+      image_url,
+      purchase_unit,
+      comparison_scale,
+      minimum_purchase,
+    });
     res.json({ success: true, message: "Ingredient updated" });
   } catch (error) {
     console.error(error);

@@ -37,7 +37,7 @@ router.post("/complete", async (req, res) => {
       await db("extra_items").insert({
         meal_plan_id: mealPlanId.id,
         ingredient_id: ingredient.ingredient_id,
-        quantity: ingredient.quantity,
+        quantity: ingredient.quantity * (ingredient.comparison_scale || 1),
       });
     }
 
@@ -70,7 +70,7 @@ router.put("/:id/complete", async (req, res) => {
       await db("extra_items").insert({
         meal_plan_id: id,
         ingredient_id: ingredient.ingredient_id,
-        quantity: ingredient.quantity,
+        quantity: ingredient.quantity * (ingredient.comparison_scale || 1),
       });
     }
 
@@ -102,60 +102,6 @@ router.get("/latest-id", async (req, res) => {
   res.json({ id: latestMealPlan.id });
 });
 
-router.get("/:id/grocery-list", async (req, res) => {
-  const mealPlanId = req.params.id;
-  // 1. Fetch all planned meals and their ingredients
-  const plannedIngredients = await db("planned_meals")
-    .join(
-      "recipe_ingredients",
-      "planned_meals.recipe_id",
-      "recipe_ingredients.recipe_id"
-    )
-    .join("ingredients", "recipe_ingredients.ingredient_id", "ingredients.id")
-    .select(
-      "ingredients.name",
-      "ingredients.unit",
-      "ingredients.image_url",
-      db.raw(
-        "recipe_ingredients.quantity * planned_meals.multiplier as quantity"
-      )
-    )
-    .where("planned_meals.meal_plan_id", mealPlanId);
-
-  // 2. Fetch extra grocery items with ingredient details
-  const extraItems = await db("extra_items")
-    .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
-    .select(
-      "ingredients.id",
-      "ingredients.name",
-      "ingredients.unit",
-      "ingredients.image_url",
-      "extra_items.quantity"
-    )
-    .where("extra_items.meal_plan_id", mealPlanId);
-
-  // 3. Combine and group by name+unit
-  const grouped = {};
-
-  [...plannedIngredients, ...extraItems].forEach((item) => {
-    const key = `${item.name}-${item.unit}`;
-    if (!grouped[key]) {
-      grouped[key] = {
-        id: item.id,
-        name: item.name,
-        total_quantity: parseFloat(item.quantity),
-        unit: item.unit,
-        image_url: item.image_url || null,
-      };
-    } else {
-      grouped[key].total_quantity += parseFloat(item.quantity);
-    }
-  });
-
-  const groceryList = Object.values(grouped);
-  res.json(groceryList);
-});
-
 router.get("/:id/grocery-list/by-recipe", async (req, res) => {
   const mealPlanId = req.params.id;
 
@@ -177,20 +123,31 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       .join("ingredients", "recipe_ingredients.ingredient_id", "ingredients.id")
       .select(
         "ingredients.name",
-        db.raw("recipe_ingredients.quantity * ? as quantity", [
-          meal.multiplier,
-        ]),
+        db.raw(
+          "ROUND((recipe_ingredients.quantity * ? * (1 / ingredients.comparison_scale))::numeric, 2) as quantity",
+          [meal.multiplier]
+        ),
         "ingredients.id",
-        "ingredients.unit",
+        "ingredients.unit_purchase as unit",
         "ingredients.image_url"
       )
       .where("recipe_ingredients.recipe_id", meal.recipe_id);
+
+    const formattedIngredients = ingredients.map((item) => ({
+      ...item,
+      quantity:
+        Number(item.quantity) % 1 === 0
+          ? Number(item.quantity).toFixed(0)
+          : Number(item.quantity)
+              .toFixed(2)
+              .replace(/\.?0+$/, ""),
+    }));
 
     result.push({
       id: meal.recipe_id,
       name: meal.recipe_name,
       image_url: meal.image_url,
-      ingredients,
+      ingredients: formattedIngredients,
     });
   }
 
@@ -200,9 +157,11 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
     .select(
       "ingredients.id",
       "ingredients.name",
-      "ingredients.unit",
+      "ingredients.unit_purchase as unit",
       "ingredients.image_url",
-      "extra_items.quantity"
+      db.raw(
+        "ROUND((extra_items.quantity * (1 / ingredients.comparison_scale))::numeric, 2) as quantity"
+      )
     )
     .where("extra_items.meal_plan_id", mealPlanId);
 
@@ -214,7 +173,12 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       ingredients: extras.map((item) => ({
         id: item.id,
         name: item.name,
-        quantity: item.quantity,
+        quantity:
+          Number(item.quantity) % 1 === 0
+            ? Number(item.quantity).toFixed(0)
+            : Number(item.quantity)
+                .toFixed(2)
+                .replace(/\.?0+$/, ""),
         unit: item.unit,
         image_url: item.image_url,
       })),
