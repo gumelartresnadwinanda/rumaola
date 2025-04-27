@@ -129,7 +129,8 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
         ),
         "ingredients.id",
         "ingredients.unit_purchase as unit",
-        "ingredients.image_url"
+        "ingredients.image_url",
+        "ingredients.minimum_purchase"
       )
       .where("recipe_ingredients.recipe_id", meal.recipe_id);
 
@@ -159,6 +160,7 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       "ingredients.name",
       "ingredients.unit_purchase as unit",
       "ingredients.image_url",
+      "ingredients.minimum_purchase",
       db.raw(
         "ROUND((extra_items.quantity * (1 / ingredients.comparison_scale))::numeric, 2) as quantity"
       )
