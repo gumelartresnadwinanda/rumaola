@@ -134,15 +134,14 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       )
       .where("recipe_ingredients.recipe_id", meal.recipe_id);
 
-    const formattedIngredients = ingredients.map((item) => ({
-      ...item,
-      quantity:
-        Number(item.quantity) % 1 === 0
-          ? Number(item.quantity).toFixed(0)
-          : Number(item.quantity)
-              .toFixed(2)
-              .replace(/\.?0+$/, ""),
-    }));
+    const formattedIngredients = ingredients.map((item) => {
+      let quantityNum = Number(item.quantity);
+      quantityNum = Math.round(quantityNum * 100) / 100;
+      return {
+        ...item,
+        quantity: quantityNum % 1 === 0 ? parseInt(quantityNum) : quantityNum,
+      };
+    });
 
     result.push({
       id: meal.recipe_id,
@@ -172,18 +171,17 @@ router.get("/:id/grocery-list/by-recipe", async (req, res) => {
       id: 9999999999999999,
       name: "Tambahan Manual",
       image_url: null,
-      ingredients: extras.map((item) => ({
-        id: item.id,
-        name: item.name,
-        quantity:
-          Number(item.quantity) % 1 === 0
-            ? Number(item.quantity).toFixed(0)
-            : Number(item.quantity)
-                .toFixed(2)
-                .replace(/\.?0+$/, ""),
-        unit: item.unit,
-        image_url: item.image_url,
-      })),
+      ingredients: extras.map((item) => {
+        let quantityNum = Number(item.quantity);
+        quantityNum = Math.round(quantityNum * 100) / 100;
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: quantityNum % 1 === 0 ? parseInt(quantityNum) : quantityNum,
+          unit: item.unit,
+          image_url: item.image_url,
+        };
+      }),
     });
   }
 
