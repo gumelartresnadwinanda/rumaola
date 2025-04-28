@@ -9,6 +9,7 @@ router.get("/", async (req, res) => {
       "id",
       "name",
       db.raw(is_extra ? '"unit_purchase" as "unit"' : '"unit"'),
+      "unit_purchase",
       "image_url",
       "comparison_scale",
     ])

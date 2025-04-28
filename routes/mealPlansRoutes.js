@@ -206,14 +206,25 @@ router.get("/:id", async (req, res) => {
     .join("ingredients", "extra_items.ingredient_id", "ingredients.id")
     .select(
       "extra_items.ingredient_id as id",
-      "extra_items.quantity",
+      db.raw(
+        "ROUND((extra_items.quantity * (1 / ingredients.comparison_scale))::numeric, 2) as quantity"
+      ),
       "ingredients.name",
-      "ingredients.unit",
-      "ingredients.image_url"
+      "ingredients.unit_purchase as unit",
+      "ingredients.image_url",
+      "ingredients.comparison_scale"
     )
     .where("extra_items.meal_plan_id", req.params.id);
 
-  res.json({ ...plan, meals, extras });
+  const formattedExtras = extras.map((item) => {
+    let quantityNum = Number(item.quantity);
+    quantityNum = Math.round(quantityNum * 100) / 100;
+    return {
+      ...item,
+      quantity: quantityNum % 1 === 0 ? parseInt(quantityNum) : quantityNum,
+    };
+  });
+  res.json({ ...plan, meals, extras: formattedExtras });
 });
 
 module.exports = router;
