@@ -41,8 +41,8 @@ app.use("/api/extra-items", require("./routes/extraItemRoutes"));
 app.use("/api", require("./routes/supabaseUpload"));
 
 const SERVER_PORT = process.env.SERVER_PORT || 5005;
-const SERVER_URL = process.env.SERVER_URL || "http://localhost";
+const PORT = process.env.PORT || SERVER_PORT;
 
-app.listen(SERVER_PORT, () => {
-  console.log(`Server is running on ${SERVER_URL}:${SERVER_PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
