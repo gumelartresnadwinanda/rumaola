@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
     name,
     unit,
     image_url,
-    purchase_unit,
+    unit_purchase,
     comparison_scale,
     minimum_purchase,
   } = req.body;
@@ -45,7 +45,7 @@ router.post("/", async (req, res) => {
         name,
         unit,
         image_url,
-        purchase_unit,
+        unit_purchase,
         comparison_scale,
         minimum_purchase,
       })
@@ -62,7 +62,7 @@ router.put("/:id", async (req, res) => {
     name,
     unit,
     image_url,
-    purchase_unit,
+    unit_purchase,
     comparison_scale,
     minimum_purchase,
   } = req.body;
@@ -72,7 +72,7 @@ router.put("/:id", async (req, res) => {
       name,
       unit,
       image_url,
-      purchase_unit,
+      unit_purchase,
       comparison_scale,
       minimum_purchase,
     });
