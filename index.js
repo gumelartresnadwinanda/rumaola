@@ -27,7 +27,7 @@ app.use(cookieParser());
 app.use(authMiddleware);
 
 // Serve static files from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
   res.send("Rumaola Server is running!");
@@ -38,7 +38,7 @@ app.use("/api/recipes", require("./routes/recipeRoutes"));
 app.use("/api/meal-plans", require("./routes/mealPlansRoutes"));
 app.use("/api/planned-meals", require("./routes/plannedMealRoutes"));
 app.use("/api/extra-items", require("./routes/extraItemRoutes"));
-app.use("/api", require("./routes/upload")); // Add the upload route
+app.use("/api", require("./routes/supabaseUpload"));
 
 const SERVER_PORT = process.env.SERVER_PORT || 5005;
 const SERVER_URL = process.env.SERVER_URL || "http://localhost";
