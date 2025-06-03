@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const knex = require("../db/knex");
+const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
   try {
     const { start_date, end_date, category_id, source_id } = req.query;
-    let query = knex("expenses")
+    let query = db("expenses")
       .orderBy("date", "desc");
 
     if (start_date) {
@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const trx = await knex.transaction();
+  const trx = await db.transaction();
   try {
     const { amount, date, description, category_id, source_id } = req.body;
     
@@ -56,7 +56,7 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const trx = await knex.transaction();
+  const trx = await db.transaction();
   try {
     const { amount, date, description, category_id, source_id } = req.body;
     
@@ -97,7 +97,7 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const trx = await knex.transaction();
+  const trx = await db.transaction();
   try {
     const expense = await trx("expenses")
       .where({ id: req.params.id })

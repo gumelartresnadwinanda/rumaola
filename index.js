@@ -30,13 +30,15 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/", (req, res) => {
   res.send("Rumaola Server is running!");
 });
-
+ 
 app.use("/api/ingredients", require("./routes/ingredientRoutes"));
 app.use("/api/recipes", require("./routes/recipeRoutes"));
 app.use("/api/meal-plans", require("./routes/mealPlansRoutes"));
 app.use("/api/planned-meals", require("./routes/plannedMealRoutes"));
 app.use("/api/extra-items", require("./routes/extraItemRoutes"));
-app.use("/api", require("./routes/supabaseUpload"));
+if (process.env.SUPABASE_URL) {
+  app.use("/api", require("./routes/supabaseUpload"));
+}
 
 app.use("/api/budgets", require("./routes/budgetRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));

@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const knex = require("../db/knex");
+const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
   try {
-    const budgets = await knex("budgets")
+    const budgets = await db("budgets")
       .orderBy("start_date", "desc");
     res.json(budgets);
   } catch (error) {
@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { total_amount, start_date, end_date } = req.body;
-    const [budget] = await knex("budgets")
+    const [budget] = await db("budgets")
       .insert({
         total_amount,
         start_date,
@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { total_amount, start_date, end_date } = req.body;
-    const [budget] = await knex("budgets")
+    const [budget] = await db("budgets")
       .where({ id: req.params.id })
       .update({
         total_amount,
@@ -50,7 +50,7 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const deleted = await knex("budgets")
+    const deleted = await db("budgets")
       .where({ id: req.params.id })
       .del();
     if (!deleted) {

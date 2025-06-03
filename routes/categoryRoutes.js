@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const knex = require("../db/knex");
+const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
   try {
-    const categories = await knex("categories")
+    const categories = await db("categories")
       .orderBy("name");
     res.json(categories);
   } catch (error) {
@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, description, icon, color } = req.body;
-    const [category] = await knex("categories")
+    const [category] = await db("categories")
       .insert({
         name,
         description,
@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { name, description, icon, color } = req.body;
-    const [category] = await knex("categories")
+    const [category] = await db("categories")
       .where({ id: req.params.id })
       .update({
         name,
@@ -52,7 +52,7 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const deleted = await knex("categories")
+    const deleted = await db("categories")
       .where({ id: req.params.id })
       .del();
     if (!deleted) {

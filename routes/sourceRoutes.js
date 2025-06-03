@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const knex = require("../db/knex");
+const db = require("../db/connection");
 
 router.get("/", async (req, res) => {
   try {
-    const sources = await knex("sources")
+    const sources = await db("sources")
       .orderBy("name");
     res.json(sources);
   } catch (error) {
@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, description, type, balance } = req.body;
-    const [source] = await knex("sources")
+    const [source] = await db("sources")
       .insert({
         name,
         description,
@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { name, description, type, balance } = req.body;
-    const [source] = await knex("sources")
+    const [source] = await db("sources")
       .where({ id: req.params.id })
       .update({
         name,
@@ -52,7 +52,7 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const deleted = await knex("sources")
+    const deleted = await db("sources")
       .where({ id: req.params.id })
       .del();
     if (!deleted) {
@@ -66,11 +66,11 @@ router.delete("/:id", async (req, res) => {
 
 router.get("/:id/balance-history", async (req, res) => {
   try {
-    const expenses = await knex("expenses")
+    const expenses = await db("expenses")
       .where({ source_id: req.params.id })
       .orderBy("date", "desc");
     
-    const source = await knex("sources")
+    const source = await db("sources")
       .where({ id: req.params.id })
       .first();
     
