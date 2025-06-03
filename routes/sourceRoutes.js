@@ -87,4 +87,59 @@ router.get("/:id/balance-history", async (req, res) => {
   }
 });
 
+router.post("/transfer", async (req, res) => {
+  try {
+    const { fromSourceId, toSourceId, amount } = req.body;
+
+    if (!fromSourceId || !toSourceId || !amount) {
+      return res.status(400).json({ error: "Missing required fields: fromSourceId, toSourceId, and amount are required" });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: "Transfer amount must be greater than 0" });
+    }
+
+    if (fromSourceId === toSourceId) {
+      return res.status(400).json({ error: "Cannot transfer to the same source" });
+    }
+
+    const result = await db.transaction(async (trx) => {
+      // Get and lock both sources
+      const [fromSource, toSource] = await Promise.all([
+        trx("sources").where({ id: fromSourceId }).first().forUpdate(),
+        trx("sources").where({ id: toSourceId }).first().forUpdate()
+      ]);
+
+      if (!fromSource || !toSource) {
+        throw new Error("One or both sources not found");
+      }
+
+      if (fromSource.balance < amount) {
+        throw new Error("Insufficient balance in source account");
+      }
+
+      // Update balances
+      const [updatedFromSource, updatedToSource] = await Promise.all([
+        trx("sources")
+          .where({ id: fromSourceId })
+          .update({ balance: fromSource.balance - amount })
+          .returning("*"),
+        trx("sources")
+          .where({ id: toSourceId })
+          .update({ balance: toSource.balance + amount })
+          .returning("*")
+      ]);
+
+      return {
+        fromSource: updatedFromSource[0],
+        toSource: updatedToSource[0]
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router; 
