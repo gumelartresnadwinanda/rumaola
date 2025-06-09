@@ -5,6 +5,7 @@ const db = require("../db/connection");
 router.get("/", async (req, res) => {
   try {
     const budgets = await db("budgets")
+      .whereNull("deleted_at")
       .orderBy("start_date", "desc");
     res.json(budgets);
   } catch (error) {
@@ -48,12 +49,12 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.put("/:id/delete", async (req, res) => {
   try {
-    const deleted = await db("budgets")
+    const updated = await db("budgets")
       .where({ id: req.params.id })
-      .del();
-    if (!deleted) {
+      .update({ deleted_at: db.fn.now() });
+    if (!updated) {
       return res.status(404).json({ error: "Budget not found" });
     }
     res.status(204).send();

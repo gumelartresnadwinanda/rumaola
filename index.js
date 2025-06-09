@@ -8,7 +8,7 @@ require("dotenv").config();
 const allowedOrigins = process.env.CORS_ORIGINS?.split(",") || [];
 
 const app = express();
-app.use(bodyParser.json()); // Parse incoming JSON data
+app.use(bodyParser.json());
 
 app.use(
   cors({
@@ -24,7 +24,6 @@ app.use(
 );
 app.use(cookieParser());
 
-// Serve static files from the uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
@@ -36,8 +35,11 @@ app.use("/api/recipes", require("./routes/recipeRoutes"));
 app.use("/api/meal-plans", require("./routes/mealPlansRoutes"));
 app.use("/api/planned-meals", require("./routes/plannedMealRoutes"));
 app.use("/api/extra-items", require("./routes/extraItemRoutes"));
+
 if (process.env.SUPABASE_URL) {
   app.use("/api", require("./routes/supabaseUpload"));
+} else {
+  app.use("/api", require("./routes/upload"));
 }
 
 app.use("/api/budgets", require("./routes/budgetRoutes"));

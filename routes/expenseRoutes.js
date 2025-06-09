@@ -6,6 +6,7 @@ router.get("/", async (req, res) => {
   try {
     const { start_date, end_date, category_id, source_id } = req.query;
     let query = db("expenses")
+      .whereNull("deleted_at")
       .orderBy("date", "desc");
 
     if (start_date) {
@@ -96,11 +97,12 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.put("/:id/delete", async (req, res) => {
   const trx = await db.transaction();
   try {
     const expense = await trx("expenses")
       .where({ id: req.params.id })
+      .whereNull("deleted_at")
       .first();
 
     if (!expense) {
@@ -114,7 +116,7 @@ router.delete("/:id", async (req, res) => {
 
     await trx("expenses")
       .where({ id: req.params.id })
-      .del();
+      .update({ deleted_at: trx.fn.now() });
 
     await trx.commit();
     res.status(204).send();
